@@ -1,0 +1,11 @@
+<resources>
+
+    <dimen name="title_size">16sp</dimen>
+
+    <dimen name="image_width">100dp</dimen>
+    <dimen name="feed_padding">10dp</dimen>
+    <dimen name="text_margin">10dp</dimen>
+
+    <dimen name="divider_height">1dp</dimen>
+
+</resources>
