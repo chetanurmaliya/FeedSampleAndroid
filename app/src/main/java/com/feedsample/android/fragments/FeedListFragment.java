@@ -2,6 +2,7 @@ package com.feedsample.android.fragments;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -191,6 +192,14 @@ public class FeedListFragment extends Fragment implements FeedListView, SwipeRef
         setSwipeRefreshLayoutState(false);
         if (!TextUtils.isEmpty(errorMessage)) {
             AppUtility.showToastMessage(getContext(), errorMessage);
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (feedListData != null && !feedListData.isEmpty() && feedListAdapter != null) {
+            feedListAdapter.notifyDataSetChanged();
         }
     }
 
