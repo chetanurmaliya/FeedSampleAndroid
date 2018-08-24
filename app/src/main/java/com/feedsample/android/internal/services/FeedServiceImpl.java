@@ -88,12 +88,31 @@ public class FeedServiceImpl implements FeedService {
         }
     }
 
-
+    /**
+     * Callback for feed response.
+     *
+     * @author chetan
+     */
     public interface Callback {
+        /**
+         * Load feed list success response.
+         *
+         * @param feedList
+         */
         void onLoadFeedListSuccess(FeedList feedList);
 
+        /**
+         * Load previous feed list success response.
+         *
+         * @param feedList
+         */
         void onLoadPreviousFeedListSuccess(FeedList feedList);
 
+        /**
+         * Error response.
+         *
+         * @param error Error message.
+         */
         void onError(String error);
     }
 }
