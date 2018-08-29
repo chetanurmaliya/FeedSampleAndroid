@@ -63,7 +63,7 @@ public class FeedListPresenter extends BasePresenter implements FeedServiceImpl.
         }
 
         if (feedService != null) {
-            feedService.getFeedList(queryText);
+            feedService.getPreviousFeedList(queryText);
         }
     }
 

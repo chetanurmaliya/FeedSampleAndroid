@@ -25,10 +25,12 @@ import com.feedsample.android.R;
 import com.feedsample.android.adapter.FeedListAdapter;
 import com.feedsample.android.entities.Feed;
 import com.feedsample.android.entities.FeedList;
+import com.feedsample.android.listeners.OnEndlessScrollListener;
 import com.feedsample.android.mvpviews.FeedListView;
 import com.feedsample.android.presenters.FeedListPresenter;
 import com.feedsample.android.utils.AppUtility;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,14 +41,16 @@ import java.util.List;
 public class FeedListFragment extends Fragment implements FeedListView, SwipeRefreshLayout.OnRefreshListener {
 
     public static final String TAG = "FeedListFragment";
+    private List<Feed> feedListData = new ArrayList<>();
     private ProgressBar progressBar;
     private RecyclerView recyclerView;
     private SwipeRefreshLayout swipeRefreshLayout;
     private Callback callback;
     private FeedListPresenter feedListPresenter;
     private String queryText;
-    private List<Feed> feedListData;
     private FeedListAdapter feedListAdapter;
+    private OnEndlessScrollListener onEndlessScrollListener;
+    private boolean isLoadMore;
 
     public static FeedListFragment newInstance(Intent intent) {
         FeedListFragment feedListFragment = new FeedListFragment();
@@ -76,6 +80,7 @@ public class FeedListFragment extends Fragment implements FeedListView, SwipeRef
         progressBar = view.findViewById(R.id.progress_bar);
         recyclerView = view.findViewById(R.id.feed_list);
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
+
         swipeRefreshLayout.setOnRefreshListener(this);
         swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(getContext(), R.color.colorPrimary));
     }
@@ -84,7 +89,22 @@ public class FeedListFragment extends Fragment implements FeedListView, SwipeRef
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         setHasOptionsMenu(true);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(linearLayoutManager);
+        feedListAdapter = new FeedListAdapter(feedListData);
+        recyclerView.setAdapter(feedListAdapter);
 
+        onEndlessScrollListener = new OnEndlessScrollListener(linearLayoutManager) {
+            @Override
+            public void onLoadMore(int currentPage) {
+                isLoadMore = true;
+                if (feedListPresenter != null) {
+                    feedListPresenter.getFeedList(queryText);
+                }
+            }
+        };
+
+        recyclerView.addOnScrollListener(onEndlessScrollListener);
         feedListPresenter = new FeedListPresenter(this);
     }
 
@@ -103,6 +123,9 @@ public class FeedListFragment extends Fragment implements FeedListView, SwipeRef
 
     @Override
     public void onDestroy() {
+        if (recyclerView != null && recyclerView != null) {
+            recyclerView.removeOnScrollListener(onEndlessScrollListener);
+        }
         if (feedListPresenter != null) {
             feedListPresenter.stop();
             feedListPresenter = null;
@@ -164,18 +187,23 @@ public class FeedListFragment extends Fragment implements FeedListView, SwipeRef
 
     @Override
     public void onLoadFeedListSuccess(FeedList feedList) {
+        if (!isAdded()) return;
+        isLoadMore = false;
         setSwipeRefreshLayoutState(false);
         if (feedList != null && feedList.getFeedList() != null) {
-            feedListData = feedList.getFeedList();
-            recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-
-            feedListAdapter = new FeedListAdapter(feedListData);
-            recyclerView.setAdapter(feedListAdapter);
+            if (feedListData != null) {
+                feedListData.addAll(feedList.getFeedList());
+                if (feedListAdapter != null) {
+                    feedListAdapter.notifyDataSetChanged();
+                }
+            }
         }
     }
 
     @Override
     public void onLoadPreviousFeedListSuccess(FeedList feedList) {
+        if (!isAdded()) return;
+        isLoadMore = false;
         setSwipeRefreshLayoutState(false);
         if (feedList != null && feedList.getFeedList() != null) {
             if (feedListData != null && !feedListData.isEmpty()) {
@@ -189,10 +217,15 @@ public class FeedListFragment extends Fragment implements FeedListView, SwipeRef
 
     @Override
     public void onErrorResponse(String errorMessage) {
+        if (!isAdded()) return;
         setSwipeRefreshLayoutState(false);
         if (!TextUtils.isEmpty(errorMessage)) {
             AppUtility.showToastMessage(getContext(), errorMessage);
         }
+        if (isLoadMore && onEndlessScrollListener != null) {
+            onEndlessScrollListener.enableLoadMore();
+        }
+        isLoadMore = false;
     }
 
     @Override
